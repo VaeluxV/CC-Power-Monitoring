@@ -1,68 +1,49 @@
-local energyCubeName = "peripheral_name_of_energy_cube"
-local monitorName = "monitor_0"  -- Update with your monitor name
-local updateInterval = 2
+local networkName = "integrateddynamics_network"  -- Replace with your network's peripheral name
+local monitorName = "monitor_0"  -- Replace with your monitor name
+local updateInterval = 2  -- Time in seconds for updates
 
+local network = peripheral.wrap(networkName)
 local monitor = peripheral.wrap(monitorName)
-monitor.setTextScale(0.5)  -- Adjust scale for readability
+monitor.setTextScale(0.5)  -- Adjust the text scale for readability
 
+-- Function to get energy stats from Integrated Dynamics
 local function getEnergyStats()
-    local cube = peripheral.wrap(energyCubeName)
-    if not cube then
-        error("Energy Cube not connected or wrong name!")
+    local energyStored = network.getEnergy()  -- Assuming Integrated Dynamics reads energy
+    local energyCapacity = network.getMaxEnergy()
+
+    if energyStored and energyCapacity then
+        return {
+            stored = energyStored,
+            capacity = energyCapacity,
+            percent = (energyStored / energyCapacity) * 100
+        }
+    else
+        error("Failed to read energy stats from Integrated Dynamics!")
     end
-
-    local energyStored = cube.getEnergy()
-    local energyCapacity = cube.getMaxEnergy()
-
-    return {
-        stored = energyStored,
-        capacity = energyCapacity,
-        percent = (energyStored / energyCapacity) * 100
-    }
 end
 
-local function monitorPowerFlow()
-    local lastEnergy = getEnergyStats().stored
-    local lastUpdate = os.clock()
-
+-- Function to display energy stats on the monitor
+local function displayEnergyStats()
     while true do
-        local currentEnergy = getEnergyStats().stored
-        local currentTime = os.clock()
-        local timeDiff = currentTime - lastUpdate
-        local energyDiff = currentEnergy - lastEnergy
-        local flowRate = energyDiff / timeDiff
+        local stats = getEnergyStats()
 
-        lastEnergy = currentEnergy
-        lastUpdate = currentTime
-
-        -- Display on the monitor
         monitor.clear()
         monitor.setCursorPos(1, 1)
-        monitor.write("Power Monitoring - Basic Energy Cube")
+        monitor.write("Draconic Energy Core Monitor")
         monitor.setCursorPos(1, 2)
-        monitor.write("-------------------------------")
+        monitor.write("----------------------------")
         monitor.setCursorPos(1, 3)
-        monitor.write("Stored Power: " .. string.format("%.2f", getEnergyStats().stored) .. " RF")
+        monitor.write("Stored Power: " .. string.format("%.2f", stats.stored) .. " RF")
         monitor.setCursorPos(1, 4)
-        monitor.write("Capacity: " .. string.format("%.2f", getEnergyStats().capacity) .. " RF")
+        monitor.write("Capacity: " .. string.format("%.2f", stats.capacity) .. " RF")
         monitor.setCursorPos(1, 5)
-        monitor.write("Power Percentage: " .. string.format("%.2f", getEnergyStats().percent) .. " %")
+        monitor.write("Power Percentage: " .. string.format("%.2f", stats.percent) .. " %")
         monitor.setCursorPos(1, 6)
-        monitor.write("-------------------------------")
-        if flowRate > 0 then
-            monitor.setCursorPos(1, 7)
-            monitor.write("Incoming Power: " .. string.format("%.2f", flowRate) .. " RF/t")
-        elseif flowRate < 0 then
-            monitor.setCursorPos(1, 7)
-            monitor.write("Outgoing Power: " .. string.format("%.2f", -flowRate) .. " RF/t")
-        else
-            monitor.setCursorPos(1, 7)
-            monitor.write("Power Flow: Stable (no change)")
-        end
+        monitor.write("----------------------------")
 
         sleep(updateInterval)
     end
 end
 
--- Start the program
-monitorPowerFlow()
+-- Start displaying the energy stats
+displayEnergyStats()
